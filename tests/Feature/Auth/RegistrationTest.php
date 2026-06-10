@@ -17,11 +17,11 @@ class RegistrationTest extends TestCase
         $this->skipUnlessFortifyHas(Features::registration());
     }
 
-    public function test_registration_screen_can_be_rendered()
+    public function test_registration_screen_redirects_to_home()
     {
         $response = $this->get(route('register'));
 
-        $response->assertOk();
+        $response->assertRedirect(route('home'));
     }
 
     public function test_new_users_can_register()

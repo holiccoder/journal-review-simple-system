@@ -54,45 +54,57 @@ class SubmissionController extends Controller
         $this->authorize('update', $submission);
 
         $validated = $request->validate([
-            'file' => ['required', 'file', 'max:10240'],
+            'file' => ['nullable', 'file', 'max:10240'],
             'status' => ['required', 'string', 'in:under review,needs revision,accepted,rejected,recommended for journal submission'],
             'recommendations' => ['nullable', 'string', 'max:500'],
         ]);
 
-        // Save current state as history before overriding
-        $latestFile = $submission->files()->latest()->first();
-        $submission->histories()->create([
-            'file_name' => $latestFile?->file_name ?? '',
-            'file_path' => $latestFile?->file_path ?? '',
-            'status' => $submission->status,
-            'comment' => $submission->recommendations,
-            'submitted_at' => $submission->submitted_at,
-            'by_user_id' => $request->user()->id,
-        ]);
-
+        $isAdmin = $request->user()->hasRole('admin');
         $file = $request->file('file');
 
-        $path = $file->store('submissions');
+        if ($file) {
+            // Save current state as history before overriding
+            $latestFile = $submission->files()->latest()->first();
+            $submission->histories()->create([
+                'file_name' => $latestFile?->file_name ?? '',
+                'file_path' => $latestFile?->file_path ?? '',
+                'status' => $submission->status,
+                'comment' => $submission->recommendations,
+                'submitted_at' => $submission->submitted_at,
+                'by_user_id' => $request->user()->id,
+            ]);
 
-        $submission->files()->create([
-            'user_id' => $request->user()->id,
-            'file_name' => $file->getClientOriginalName(),
-            'file_path' => $path,
-            'file_size' => $file->getSize(),
-            'file_extension' => $file->getClientOriginalExtension(),
-        ]);
+            $path = $file->store('submissions');
 
-        // Auto-increment version
-        $nextVersion = (string) ((float) $submission->version + 0.1);
+            $submission->files()->create([
+                'user_id' => $request->user()->id,
+                'file_name' => $file->getClientOriginalName(),
+                'file_path' => $path,
+                'file_size' => $file->getSize(),
+                'file_extension' => $file->getClientOriginalExtension(),
+            ]);
 
-        $submission->update([
-            'version' => $nextVersion,
-            'status' => $validated['status'],
-            'recommendations' => $validated['recommendations'] ?? null,
-            'submitted_at' => now(),
-        ]);
+            // Only non-admin users trigger a version increment
+            $version = $isAdmin
+                ? $submission->version
+                : (string) ((float) $submission->version + 0.1);
 
-        return back()->with('status', 'File replaced successfully.');
+            $submission->update([
+                'version' => $version,
+                'status' => $validated['status'],
+                'recommendations' => $validated['recommendations'] ?? null,
+                'submitted_at' => now(),
+            ]);
+        } else {
+            // No file — only update status and recommendations
+            $submission->update([
+                'status' => $validated['status'],
+                'recommendations' => $validated['recommendations'] ?? null,
+                'submitted_at' => now(),
+            ]);
+        }
+
+        return back()->with('status', 'Submission updated successfully.');
     }
 
     /**

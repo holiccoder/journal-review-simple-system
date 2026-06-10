@@ -94,6 +94,7 @@ export default function SubmissionsTable({ submissions }: Props) {
                         <thead>
                             <tr className="border-b border-sidebar-border/70">
                                 <th className="w-full pb-2 pr-3 font-medium text-muted-foreground">Title</th>
+                                <th className="whitespace-nowrap pb-2 pr-3 font-medium text-muted-foreground">Name</th>
                                 <th className="whitespace-nowrap pb-2 pr-3 font-medium text-muted-foreground">Version</th>
                                 <th className="whitespace-nowrap pb-2 pr-3 font-medium text-muted-foreground">Status</th>
                                 <th className="whitespace-nowrap pb-2 pr-3 font-medium text-muted-foreground">Updated</th>
@@ -110,6 +111,11 @@ export default function SubmissionsTable({ submissions }: Props) {
                                     <td className="py-2 pr-3">
                                         <span className="truncate block">
                                             {truncateTitle(submission.title)}
+                                        </span>
+                                    </td>
+                                    <td className="py-2 pr-3 text-muted-foreground">
+                                        <span className="truncate block max-w-[120px]">
+                                            {submission.user_name ?? '—'}
                                         </span>
                                     </td>
                                     <td className="py-2 pr-3 text-muted-foreground">

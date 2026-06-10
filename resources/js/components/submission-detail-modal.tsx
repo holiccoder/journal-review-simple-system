@@ -17,9 +17,11 @@ import { Spinner } from '@/components/ui/spinner';
 type FileEntry = {
     id: number;
     user_id: number | null;
+    is_uploader_admin?: boolean;
     file_name: string;
     file_size: number;
     file_extension: string;
+    created_at: string | null;
     download_url: string;
 };
 
@@ -121,13 +123,14 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
         form.clearErrors();
     };
 
-    const uploadButtonLabel = isAdmin ? 'Submit' : 'Upload Revised Files';
+    const uploadButtonLabel = isAdmin ? 'Start Review' : 'Upload Revised Files';
+    const submitButtonLabel = isAdmin ? 'Submit' : 'Upload Revised Files';
     const dialogTitle = isAdmin ? 'Submission Details' : 'Review Details';
 
-    // Non-admin: only files NOT uploaded by the current user
+    // Admin: show all files except admin-uploaded. Non-admin: only show admin-uploaded files.
     const visibleFiles = isAdmin
-        ? submission.files
-        : submission.files.filter((f) => f.user_id !== currentUserId);
+        ? submission.files.filter((f) => f.is_uploader_admin !== true)
+        : submission.files.filter((f) => f.is_uploader_admin === true);
 
     return (
         <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
@@ -246,10 +249,10 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                                     type="submit"
                                     size="sm"
                                     className="text-sm"
-                                    disabled={form.processing || !form.data.file}
+                                    disabled={form.processing}
                                 >
                                     {form.processing && <Spinner />}
-                                    {uploadButtonLabel}
+                                    {submitButtonLabel}
                                 </Button>
                             </div>
                         </form>
@@ -258,49 +261,20 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                     <>
                         <DialogHeader>
                             <DialogTitle className="text-sm">{dialogTitle}</DialogTitle>
-                            <DialogDescription className="text-sm">
-                                Details for submission #{submission.id}
-                            </DialogDescription>
                         </DialogHeader>
 
                         <div className="flex flex-col gap-4">
                             {isAdmin ? (
                                 /* ---------- Admin view ---------- */
                                 <>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Title</span>
-                                            <span className="font-medium">{truncateTitle(submission.title)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Name</span>
-                                            <span className="font-medium">{submission.name}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Version</span>
-                                            <span className="font-mono">v{submission.version}</span>
-                                        </div>
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Status</span>
-                                            <span
-                                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusVariant(
-                                                    submission.status,
-                                                )}`}
-                                            >
-                                                {submission.status}
-                                            </span>
-                                        </div>
-                                        <div className="col-span-2 flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Recommendations</span>
-                                            <span className="max-w-[300px] truncate text-right">
-                                                {submission.recommendations ?? '—'}
-                                            </span>
-                                        </div>
+                                    <div>
+                                        <h4 className="mb-1 text-sm font-medium">Title</h4>
+                                        <p className="text-sm text-muted-foreground">{submission.title}</p>
                                     </div>
 
                                     {/* Files table */}
                                     <div>
-                                        <h4 className="mb-2 text-sm font-medium">Files</h4>
+                                        <h4 className="mb-2 text-sm font-medium">Reviewed Files</h4>
                                         {visibleFiles.length === 0 ? (
                                             <p className="text-sm text-muted-foreground">No files.</p>
                                         ) : (
@@ -310,7 +284,7 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                                                         <tr className="border-b bg-muted/50">
                                                             <th className="px-3 py-2 font-medium text-muted-foreground">File Name</th>
                                                             <th className="px-3 py-2 font-medium text-muted-foreground">Extension</th>
-                                                            <th className="px-3 py-2 font-medium text-muted-foreground">Size</th>
+                                                            <th className="px-3 py-2 font-medium text-muted-foreground">Uploaded</th>
                                                             <th className="px-3 py-2 font-medium text-muted-foreground"></th>
                                                         </tr>
                                                     </thead>
@@ -324,7 +298,7 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-3 py-2 text-muted-foreground">
-                                                                    {formatSize(file.file_size)}
+                                                                    {file.created_at ?? '—'}
                                                                 </td>
                                                                 <td className="px-3 py-2 text-right">
                                                                     <a href={file.download_url}>
@@ -344,31 +318,35 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                             ) : (
                                 /* ---------- Non-admin view ---------- */
                                 <>
-                                    <div className="grid grid-cols-1 gap-3">
-                                        <div className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">Status</span>
+                                    <div className="flex flex-col gap-3">
+                                        <div>
+                                            <h4 className="mb-1 text-sm font-medium">Title</h4>
+                                            <p className="text-sm text-muted-foreground">{submission.title}</p>
+                                        </div>
+                                        <div className="flex items-center text-sm">
+                                            <span className="font-semibold mr-1">Status: </span>
                                             <span
-                                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusVariant(
+                                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-semibold ${statusVariant(
                                                     submission.status,
                                                 )}`}
                                             >
                                                 {submission.status}
                                             </span>
                                         </div>
+                                        <div>
+                                            <h4 className="mb-1 text-sm font-semibold">Comments</h4>
+                                        </div>
                                     </div>
 
-                                    {/* Comments / Recommendations */}
                                     <div>
-                                        <h4 className="mb-2 text-sm font-bold">Comments</h4>
-                                        <p className="mb-1 text-sm text-muted-foreground">Recommendations</p>
                                         <p className="text-sm text-muted-foreground">
                                             {submission.recommendations ?? '—'}
                                         </p>
                                     </div>
 
-                                    {/* Files table — only files NOT uploaded by the current user */}
+                                    {/* Files table — only files uploaded by admin */}
                                     <div>
-                                        <h4 className="mb-2 text-sm text-muted-foreground">Files</h4>
+                                        <h4 className="mb-2 text-sm font-medium">Reviewed Files</h4>
                                         {visibleFiles.length === 0 ? (
                                             <p className="text-sm text-muted-foreground">No files.</p>
                                         ) : (
@@ -378,7 +356,7 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                                                         <tr className="border-b bg-muted/50">
                                                             <th className="px-3 py-2 font-normal text-muted-foreground">File Name</th>
                                                             <th className="px-3 py-2 font-normal text-muted-foreground">Extension</th>
-                                                            <th className="px-3 py-2 font-normal text-muted-foreground">Size</th>
+                                                            <th className="px-3 py-2 font-normal text-muted-foreground">Uploaded</th>
                                                             <th className="px-3 py-2 font-normal text-muted-foreground"></th>
                                                         </tr>
                                                     </thead>
@@ -392,7 +370,7 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-3 py-2 text-muted-foreground">
-                                                                    {formatSize(file.file_size)}
+                                                                    {file.created_at ?? '—'}
                                                                 </td>
                                                                 <td className="px-3 py-2 text-right">
                                                                     <a href={file.download_url}>

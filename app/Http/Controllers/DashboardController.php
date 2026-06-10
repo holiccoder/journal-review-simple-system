@@ -44,6 +44,8 @@ class DashboardController extends Controller
                         'file_name' => $f->file_name,
                         'file_size' => $f->file_size,
                         'file_extension' => $f->file_extension,
+                        'created_at' => $f->created_at?->format('Y-m-d H:i'),
+                        'is_uploader_admin' => $f->user ? (bool) $f->user->is_admin : false,
                         'download_url' => route('submissions.files.download', $f),
                     ]),
                 'histories' => $submission->histories
