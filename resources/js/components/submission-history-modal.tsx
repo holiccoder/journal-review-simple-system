@@ -1,4 +1,5 @@
 import { Download, History } from 'lucide-react';
+import { truncateTitle } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -17,9 +18,15 @@ type HistoryEntry = {
     download_url: string;
 };
 
-type Submission = {
+type FileEntry = {
     id: number;
     file_name: string;
+};
+
+type Submission = {
+    id: number;
+    title: string;
+    files: FileEntry[];
     histories: HistoryEntry[];
 };
 
@@ -31,11 +38,14 @@ type Props = {
 
 function statusVariant(status: string) {
     switch (status) {
+        case 'recommended for journal submission':
         case 'approved':
         case 'accepted':
             return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
         case 'rejected':
+        case 'needs revision':
             return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+        case 'under review':
         default:
             return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
     }
@@ -53,7 +63,7 @@ export default function SubmissionHistoryModal({ open, onClose, submission }: Pr
                     <DialogDescription className="text-sm">
                         Previous versions of{' '}
                         <span className="font-medium text-foreground">
-                            {submission.file_name}
+                            {truncateTitle(submission.title)}
                         </span>
                     </DialogDescription>
                 </DialogHeader>

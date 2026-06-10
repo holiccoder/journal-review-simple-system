@@ -18,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/submissions/{submission}/replace', [SubmissionController::class, 'replace'])->name('submissions.replace');
     Route::get('/submissions/files/{file}/download', [SubmissionController::class, 'downloadFile'])->name('submissions.files.download');
     Route::get('/submissions/history/{history}/download', [SubmissionController::class, 'downloadHistory'])->name('submissions.history.download');
+    Route::delete('/submissions/{submission}', [SubmissionController::class, 'destroy'])->name('submissions.destroy');
     Route::get('/users', [UsersController::class, 'index'])->name('users')->middleware('admin');
 });
 

@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { Upload, X } from 'lucide-react';
+import { Plus, Upload, X } from 'lucide-react';
 import { type FormEvent, useRef, useState } from 'react';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 
-export default function FileUpload({ title = 'Submit File' }: { title?: string }) {
+export default function FileUpload({ title = 'Submit File', hasSubmissions = false }: { title?: string; hasSubmissions?: boolean }) {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [dragOver, setDragOver] = useState(false);
+    const [showForm, setShowForm] = useState(false);
 
     const form = useForm({
         title: '',
@@ -59,23 +60,42 @@ export default function FileUpload({ title = 'Submit File' }: { title?: string }
                 form.setData('title', '');
                 form.setData('name', '');
                 form.setData('email', '');
+                setShowForm(false);
             },
         });
     };
 
     const filesCount = form.data.files.length;
 
-    return (
-        <form
-            onSubmit={handleSubmit}
-            className="flex flex-col gap-4 p-4"
-        >
-            <div className="flex items-center gap-2">
-                <Upload className="h-4 w-4 text-muted-foreground" />
-                <h3 className="text-sm font-medium">{title}</h3>
-            </div>
+    const isCollapsed = hasSubmissions && !showForm;
 
-            <div className="grid gap-4 md:grid-cols-2">
+    return (
+        <div className="flex flex-col justify-start p-4">
+            {!isCollapsed && (
+                <div className="mb-3 flex items-center gap-2">
+                    <Upload className="h-4 w-4 text-muted-foreground" />
+                    <h3 className="text-sm font-medium">{title}</h3>
+                </div>
+            )}
+
+            {isCollapsed ? (
+                <div className="flex flex-1 items-center justify-center py-12">
+                    <Button
+                        type="button"
+                        size="lg"
+                        className="gap-2 text-base"
+                        onClick={() => setShowForm(true)}
+                    >
+                        <Plus className="h-5 w-5" />
+                        Create a New Submission
+                    </Button>
+                </div>
+            ) : (
+                <form
+                    onSubmit={handleSubmit}
+                    className="flex flex-col gap-4"
+                >
+                    <div className="grid gap-4 md:grid-cols-2">
                 <div className="flex flex-col gap-3">
                     <div className="grid gap-2">
                         <Label htmlFor="title">Title</Label>
@@ -196,7 +216,9 @@ export default function FileUpload({ title = 'Submit File' }: { title?: string }
                         Submit
                     </Button>
                 </div>
-            </div>
-        </form>
+                    </div>
+                </form>
+            )}
+        </div>
     );
 }

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'submission_id',
+    'user_id',
     'file_name',
     'file_path',
     'file_size',
@@ -33,5 +34,13 @@ class SubmissionFile extends Model
     public function submission(): BelongsTo
     {
         return $this->belongsTo(Submission::class);
+    }
+
+    /**
+     * Get the user that owns this file.
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

@@ -1,6 +1,8 @@
-import { FileText, History } from 'lucide-react';
+import { FileText, Trash2 } from 'lucide-react';
+import { truncateTitle } from '@/lib/utils';
 import { useState } from 'react';
-import ReplaceFileModal from '@/components/replace-file-modal';
+import { usePage } from '@inertiajs/react';
+import DeleteConfirmModal from '@/components/delete-confirm-modal';
 import SubmissionDetailModal from '@/components/submission-detail-modal';
 import SubmissionHistoryModal from '@/components/submission-history-modal';
 import { Button } from '@/components/ui/button';
@@ -10,6 +12,7 @@ type FileEntry = {
     file_name: string;
     file_size: number;
     file_extension: string;
+    download_url: string;
 };
 
 type HistoryEntry = {
@@ -28,11 +31,13 @@ type Submission = {
     email: string;
     version: string;
     status: string;
-    comment: string | null;
+    recommendations: string | null;
+    user_id: number;
     user_name: string | null;
     submitted_at: string | null;
     download_url: string;
     replace_url: string;
+    delete_url: string;
     files: FileEntry[];
     histories: HistoryEntry[];
     history_count: number;
@@ -44,22 +49,28 @@ type Props = {
 
 function statusVariant(status: string) {
     switch (status) {
-        case 'recommend submission':
+        case 'recommended for journal submission':
         case 'approved':
         case 'accepted':
             return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
         case 'rejected':
         case 'needs revision':
             return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+        case 'under review':
         default:
             return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
     }
 }
 
 export default function SubmissionsTable({ submissions }: Props) {
-    const [replaceTarget, setReplaceTarget] = useState<Submission | null>(null);
-    const [historyTarget, setHistoryTarget] = useState<Submission | null>(null);
     const [detailTarget, setDetailTarget] = useState<Submission | null>(null);
+    const [historyTarget, setHistoryTarget] = useState<Submission | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<Submission | null>(null);
+
+    const { auth } = usePage().props;
+    const authUser = auth?.user as Record<string, unknown>;
+    const currentUserId = authUser?.id as number;
+    const isAdmin = (authUser?.is_admin ?? false) as boolean;
 
     return (
         <div className="flex h-full flex-col p-4">
@@ -82,16 +93,11 @@ export default function SubmissionsTable({ submissions }: Props) {
                     <table className="w-full text-left text-sm">
                         <thead>
                             <tr className="border-b border-sidebar-border/70">
-                                <th className="pb-2 pr-3 font-medium text-muted-foreground">ID</th>
-                                <th className="pb-2 pr-3 font-medium text-muted-foreground">Title</th>
-                                <th className="pb-2 pr-3 font-medium text-muted-foreground">Name</th>
-                                <th className="pb-2 pr-3 font-medium text-muted-foreground">Email</th>
-                                <th className="pb-2 pr-3 font-medium text-muted-foreground">Version</th>
-                                <th className="pb-2 pr-3 font-medium text-muted-foreground">Status</th>
-                                <th className="pb-2 pr-3 font-medium text-muted-foreground">Comment</th>
-                                <th className="pb-2 pr-3 font-medium text-muted-foreground">Submitted</th>
-                                <th className="pb-2 pr-3 font-medium text-muted-foreground">History</th>
-                                <th className="pb-2 font-medium text-muted-foreground">Files</th>
+                                <th className="w-full pb-2 pr-3 font-medium text-muted-foreground">Title</th>
+                                <th className="whitespace-nowrap pb-2 pr-3 font-medium text-muted-foreground">Version</th>
+                                <th className="whitespace-nowrap pb-2 pr-3 font-medium text-muted-foreground">Status</th>
+                                <th className="whitespace-nowrap pb-2 pr-3 font-medium text-muted-foreground">Updated</th>
+                                <th className="pb-2 font-medium text-muted-foreground"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -101,28 +107,15 @@ export default function SubmissionsTable({ submissions }: Props) {
                                     className="cursor-pointer border-b border-sidebar-border/40 transition-colors hover:bg-muted/50 last:border-0"
                                     onClick={() => setDetailTarget(submission)}
                                 >
-                                    <td className="py-2 pr-3 font-mono text-muted-foreground">
-                                        {submission.id}
-                                    </td>
                                     <td className="py-2 pr-3">
-                                        <span className="max-w-[120px] truncate block">
-                                            {submission.title}
-                                        </span>
-                                    </td>
-                                    <td className="py-2 pr-3 text-muted-foreground">
-                                        <span className="max-w-[100px] truncate block">
-                                            {submission.name}
-                                        </span>
-                                    </td>
-                                    <td className="py-2 pr-3 text-muted-foreground">
-                                        <span className="max-w-[140px] truncate block">
-                                            {submission.email}
+                                        <span className="truncate block">
+                                            {truncateTitle(submission.title)}
                                         </span>
                                     </td>
                                     <td className="py-2 pr-3 text-muted-foreground">
                                         v{submission.version}
                                     </td>
-                                    <td className="py-2 pr-3">
+                                    <td className="whitespace-nowrap py-2 pr-3">
                                         <span
                                             className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusVariant(
                                                 submission.status,
@@ -131,45 +124,23 @@ export default function SubmissionsTable({ submissions }: Props) {
                                             {submission.status}
                                         </span>
                                     </td>
-                                    <td className="py-2 pr-3 text-muted-foreground">
-                                        <span className="max-w-[120px] truncate block">
-                                            {submission.comment ?? '—'}
-                                        </span>
-                                    </td>
-                                    <td className="py-2 text-muted-foreground">
+                                    <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">
                                         {submission.submitted_at ?? '—'}
                                     </td>
-                                    <td className="py-2 pr-3">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-6 gap-1 text-xs"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                setHistoryTarget(submission);
-                                            }}
-                                        >
-                                            <History className="h-3 w-3" />
-                                            {submission.history_count > 0 && (
-                                                <span className="text-muted-foreground">
-                                                    {submission.history_count}
-                                                </span>
-                                            )}
-                                        </Button>
-                                    </td>
-                                    <td className="py-2 text-muted-foreground">
-                                        {submission.files.length === 0 ? (
-                                            <span className="text-muted-foreground">—</span>
-                                        ) : (
-                                            <div className="flex items-center gap-1">
-                                                <span className="rounded bg-muted px-1 py-0.5 text-xs font-medium">
-                                                    {submission.files.length}
-                                                </span>
-                                                <span className="max-w-[100px] truncate">
-                                                    {submission.files.map(f => f.file_name).join(', ')}
-                                                </span>
-                                            </div>
+                                    <td className="py-2 text-right">
+                                        {(submission.user_id === currentUserId || isAdmin) && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setDeleteTarget(submission);
+                                                }}
+                                            >
+                                                <Trash2 className="h-3.5 w-3.5" />
+                                            </Button>
                                         )}
                                     </td>
                                 </tr>
@@ -179,11 +150,12 @@ export default function SubmissionsTable({ submissions }: Props) {
                 </div>
             )}
 
-            {replaceTarget && (
-                <ReplaceFileModal
+            {detailTarget && (
+                <SubmissionDetailModal
                     open={true}
-                    onClose={() => setReplaceTarget(null)}
-                    submission={replaceTarget}
+                    onClose={() => setDetailTarget(null)}
+                    submission={detailTarget}
+                    onUploaded={() => setDetailTarget(null)}
                 />
             )}
 
@@ -195,12 +167,11 @@ export default function SubmissionsTable({ submissions }: Props) {
                 />
             )}
 
-            {detailTarget && (
-                <SubmissionDetailModal
+            {deleteTarget && (
+                <DeleteConfirmModal
                     open={true}
-                    onClose={() => setDetailTarget(null)}
-                    submission={detailTarget}
-                    onUploaded={() => setDetailTarget(null)}
+                    onClose={() => setDeleteTarget(null)}
+                    submission={deleteTarget}
                 />
             )}
         </div>

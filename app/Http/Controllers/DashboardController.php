@@ -28,16 +28,19 @@ class DashboardController extends Controller
                 'email' => $submission->email,
                 'version' => $submission->version,
                 'status' => $submission->status,
-                'comment' => $submission->comment,
+                'recommendations' => $submission->recommendations,
+                'user_id' => $submission->user_id,
                 'user_name' => $submission->user?->name,
                 'submitted_at' => $submission->submitted_at?->format('Y-m-d H:i'),
                 'download_url' => route('submissions.download', $submission),
                 'replace_url' => route('submissions.replace', $submission),
+                'delete_url' => route('submissions.destroy', $submission),
                 'files' => $submission->files
                     ->sortByDesc('created_at')
                     ->values()
                     ->map(fn ($f) => [
                         'id' => $f->id,
+                        'user_id' => $f->user_id,
                         'file_name' => $f->file_name,
                         'file_size' => $f->file_size,
                         'file_extension' => $f->file_extension,

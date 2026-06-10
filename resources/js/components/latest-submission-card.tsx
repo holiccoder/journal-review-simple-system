@@ -1,4 +1,5 @@
 import { Clock } from 'lucide-react';
+import { truncateTitle } from '@/lib/utils';
 
 type Submission = {
     id: number;
@@ -7,7 +8,7 @@ type Submission = {
     email: string;
     version: string;
     status: string;
-    comment: string | null;
+    recommendations: string | null;
     submitted_at: string | null;
     download_url: string;
     files: { id: number; file_name: string; file_size: number; file_extension: string }[];
@@ -19,13 +20,14 @@ type Props = {
 
 function statusVariant(status: string) {
     switch (status) {
-        case 'recommend submission':
+        case 'recommended for journal submission':
         case 'approved':
         case 'accepted':
             return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
         case 'rejected':
         case 'needs revision':
             return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+        case 'under review':
         default:
             return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
     }
@@ -49,15 +51,7 @@ export default function LatestSubmissionCard({ submission }: Props) {
                 <div className="flex flex-col gap-2 text-sm">
                     <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Title</span>
-                        <span className="max-w-[140px] truncate font-medium">{submission.title}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Name</span>
-                        <span className="text-muted-foreground">{submission.name}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Email</span>
-                        <span className="max-w-[150px] truncate text-muted-foreground">{submission.email}</span>
+                        <span className="max-w-[140px] truncate font-medium">{truncateTitle(submission.title)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Version</span>
@@ -72,16 +66,6 @@ export default function LatestSubmissionCard({ submission }: Props) {
                         >
                             {submission.status}
                         </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Comment</span>
-                        <span className="max-w-[120px] truncate text-muted-foreground">
-                            {submission.comment ?? '—'}
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">Files</span>
-                        <span className="font-mono font-medium">{submission.files?.length ?? 0}</span>
                     </div>
                     <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">Submitted</span>

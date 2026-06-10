@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'email',
     'version',
     'status',
-    'comment',
+    'recommendations',
     'submitted_at',
 ])]
 class Submission extends Model

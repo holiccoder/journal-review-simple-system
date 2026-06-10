@@ -35,6 +35,7 @@ class SubmissionController extends Controller
 
         foreach ($request->file('files') as $file) {
             $submission->files()->create([
+                'user_id' => $request->user()->id,
                 'file_name' => $file->getClientOriginalName(),
                 'file_path' => $file->store('submissions'),
                 'file_size' => $file->getSize(),
@@ -54,8 +55,8 @@ class SubmissionController extends Controller
 
         $validated = $request->validate([
             'file' => ['required', 'file', 'max:10240'],
-            'status' => ['required', 'string', 'in:under review,needs revision,accepted,rejected,recommend submission'],
-            'comment' => ['nullable', 'string', 'max:500'],
+            'status' => ['required', 'string', 'in:under review,needs revision,accepted,rejected,recommended for journal submission'],
+            'recommendations' => ['nullable', 'string', 'max:500'],
         ]);
 
         // Save current state as history before overriding
@@ -64,7 +65,7 @@ class SubmissionController extends Controller
             'file_name' => $latestFile?->file_name ?? '',
             'file_path' => $latestFile?->file_path ?? '',
             'status' => $submission->status,
-            'comment' => $submission->comment,
+            'comment' => $submission->recommendations,
             'submitted_at' => $submission->submitted_at,
             'by_user_id' => $request->user()->id,
         ]);
@@ -74,6 +75,7 @@ class SubmissionController extends Controller
         $path = $file->store('submissions');
 
         $submission->files()->create([
+            'user_id' => $request->user()->id,
             'file_name' => $file->getClientOriginalName(),
             'file_path' => $path,
             'file_size' => $file->getSize(),
@@ -86,7 +88,7 @@ class SubmissionController extends Controller
         $submission->update([
             'version' => $nextVersion,
             'status' => $validated['status'],
-            'comment' => $validated['comment'] ?? null,
+            'recommendations' => $validated['recommendations'] ?? null,
             'submitted_at' => now(),
         ]);
 
@@ -149,6 +151,27 @@ class SubmissionController extends Controller
         }
 
         abort(404, 'File not found.');
+    }
+
+    /**
+     * Delete a submission and all related files/histories.
+     */
+    public function destroy(Request $request, Submission $submission)
+    {
+        $this->authorize('delete', $submission);
+
+        // Delete stored files from disk
+        foreach ($submission->files as $file) {
+            Storage::delete($file->file_path);
+        }
+        foreach ($submission->histories as $history) {
+            Storage::delete($history->file_path);
+        }
+
+        // DB cascades delete files and histories via foreign key cascadeOnDelete
+        $submission->delete();
+
+        return back()->with('status', 'Submission deleted.');
     }
 
     /**

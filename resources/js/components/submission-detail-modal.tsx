@@ -1,6 +1,7 @@
 import { useForm, usePage } from '@inertiajs/react';
 import { Download, Upload, X } from 'lucide-react';
 import { type FormEvent, useRef, useState } from 'react';
+import { truncateTitle } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -15,6 +16,7 @@ import { Spinner } from '@/components/ui/spinner';
 
 type FileEntry = {
     id: number;
+    user_id: number | null;
     file_name: string;
     file_size: number;
     file_extension: string;
@@ -41,7 +43,7 @@ type Props = {
         email: string;
         version: string;
         status: string;
-        comment: string | null;
+        recommendations: string | null;
         submitted_at: string | null;
         download_url: string;
         replace_url: string;
@@ -52,13 +54,14 @@ type Props = {
 
 function statusVariant(status: string) {
     switch (status) {
-        case 'recommend submission':
+        case 'recommended for journal submission':
         case 'approved':
         case 'accepted':
             return 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400';
         case 'rejected':
         case 'needs revision':
             return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+        case 'under review':
         default:
             return 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400';
     }
@@ -75,12 +78,14 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
     const [showUpload, setShowUpload] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { auth } = usePage().props;
-    const isAdmin = (auth?.user as Record<string, unknown>)?.is_admin ?? false;
+    const authUser = auth?.user as Record<string, unknown>;
+    const isAdmin = (authUser?.is_admin ?? false) as boolean;
+    const currentUserId = authUser?.id as number;
 
     const form = useForm({
         file: null as File | null,
         status: 'under review',
-        comment: '',
+        recommendations: '',
     });
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,6 +121,14 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
         form.clearErrors();
     };
 
+    const uploadButtonLabel = isAdmin ? 'Submit' : 'Upload Revised Files';
+    const dialogTitle = isAdmin ? 'Submission Details' : 'Review Details';
+
+    // Non-admin: only files NOT uploaded by the current user
+    const visibleFiles = isAdmin
+        ? submission.files
+        : submission.files.filter((f) => f.user_id !== currentUserId);
+
     return (
         <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
             <DialogContent className="sm:max-w-2xl">
@@ -135,7 +148,7 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                             <DialogDescription className="text-sm">
                                 Upload a new file for{' '}
                                 <span className="font-medium text-foreground">
-                                    {submission.title}
+                                    {truncateTitle(submission.title)}
                                 </span>
                                 . The current version will be saved in history.
                             </DialogDescription>
@@ -203,43 +216,32 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                                             }
                                             className="flex h-8 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                         >
-                                            <option value="under review">Under Review</option>
-                                            <option value="needs revision">Needs Revision</option>
-                                            <option value="accepted">Accepted</option>
-                                            <option value="rejected">Rejected</option>
-                                            <option value="recommend submission">Recommend Submission</option>
+                                            <option value="under review" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Under Review</option>
+                                            <option value="needs revision" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Needs Revision</option>
+                                            <option value="recommended for journal submission" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Recommended for Journal Submission</option>
                                         </select>
                                         <InputError message={form.errors.status} />
                                     </div>
 
                                     <div className="grid gap-1.5">
-                                        <Label htmlFor="upload-comment" className="text-sm">
-                                            Comment
+                                        <Label htmlFor="upload-recommendations" className="text-sm">
+                                            Recommendations
                                         </Label>
                                         <textarea
-                                            id="upload-comment"
-                                            value={form.data.comment}
+                                            id="upload-recommendations"
+                                            value={form.data.recommendations}
                                             onChange={(e) =>
-                                                form.setData('comment', e.target.value)
+                                                form.setData('recommendations', e.target.value)
                                             }
                                             className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                            placeholder="Add a comment..."
+                                            placeholder="Add recommendations..."
                                         />
-                                        <InputError message={form.errors.comment} />
+                                        <InputError message={form.errors.recommendations} />
                                     </div>
                                 </>
                             )}
 
                             <div className="flex justify-end gap-2">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="text-sm"
-                                    onClick={handleBack}
-                                >
-                                    Cancel
-                                </Button>
                                 <Button
                                     type="submit"
                                     size="sm"
@@ -247,7 +249,7 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                                     disabled={form.processing || !form.data.file}
                                 >
                                     {form.processing && <Spinner />}
-                                    Upload
+                                    {uploadButtonLabel}
                                 </Button>
                             </div>
                         </form>
@@ -255,159 +257,162 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                 ) : (
                     <>
                         <DialogHeader>
-                            <DialogTitle className="text-sm">Submission Details</DialogTitle>
+                            <DialogTitle className="text-sm">{dialogTitle}</DialogTitle>
                             <DialogDescription className="text-sm">
                                 Details for submission #{submission.id}
                             </DialogDescription>
                         </DialogHeader>
 
                         <div className="flex flex-col gap-4">
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Title</span>
-                                    <span className="font-medium">{submission.title}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Name</span>
-                                    <span className="font-medium">{submission.name}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Email</span>
-                                    <span className="text-muted-foreground">{submission.email}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Version</span>
-                                    <span className="font-mono">v{submission.version}</span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Status</span>
-                                    <span
-                                        className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusVariant(
-                                            submission.status,
-                                        )}`}
-                                    >
-                                        {submission.status}
-                                    </span>
-                                </div>
-                                <div className="flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Comment</span>
-                                    <span className="max-w-[200px] truncate text-right">
-                                        {submission.comment ?? '—'}
-                                    </span>
-                                </div>
-                                <div className="col-span-2 flex items-center justify-between text-sm">
-                                    <span className="text-muted-foreground">Submitted</span>
-                                    <span className="text-muted-foreground">
-                                        {submission.submitted_at ?? '—'}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {/* Files Table */}
-                            <div>
-                                <h4 className="mb-2 text-sm font-medium">Files</h4>
-                                {submission.files.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">No files.</p>
-                                ) : (
-                                    <div className="overflow-x-auto rounded-md border">
-                                        <table className="w-full text-left text-sm">
-                                            <thead>
-                                                <tr className="border-b bg-muted/50">
-                                                    <th className="px-3 py-2 font-medium text-muted-foreground">File Name</th>
-                                                    <th className="px-3 py-2 font-medium text-muted-foreground">Extension</th>
-                                                    <th className="px-3 py-2 font-medium text-muted-foreground">Size</th>
-                                                    <th className="px-3 py-2 font-medium text-muted-foreground"></th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {submission.files.map((file) => (
-                                                    <tr key={file.id} className="border-b last:border-0">
-                                                        <td className="px-3 py-2">{file.file_name}</td>
-                                                        <td className="px-3 py-2">
-                                                            <span className="rounded bg-muted px-1 py-0.5 text-xs font-medium uppercase text-muted-foreground">
-                                                                {file.file_extension}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-3 py-2 text-muted-foreground">
-                                                            {formatSize(file.file_size)}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-right">
-                                                            <a href={file.download_url}>
-                                                                <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
-                                                                    <Download className="h-3.5 w-3.5" />
-                                                                </Button>
-                                                            </a>
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                            {isAdmin ? (
+                                /* ---------- Admin view ---------- */
+                                <>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Title</span>
+                                            <span className="font-medium">{truncateTitle(submission.title)}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Name</span>
+                                            <span className="font-medium">{submission.name}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Version</span>
+                                            <span className="font-mono">v{submission.version}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Status</span>
+                                            <span
+                                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusVariant(
+                                                    submission.status,
+                                                )}`}
+                                            >
+                                                {submission.status}
+                                            </span>
+                                        </div>
+                                        <div className="col-span-2 flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Recommendations</span>
+                                            <span className="max-w-[300px] truncate text-right">
+                                                {submission.recommendations ?? '—'}
+                                            </span>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
 
-                            {/* History Table */}
-                            <div>
-                                <h4 className="mb-2 text-sm font-medium">History</h4>
-                                {submission.histories.length === 0 ? (
-                                    <p className="text-sm text-muted-foreground">No history.</p>
-                                ) : (
-                                    <div className="overflow-x-auto rounded-md border">
-                                        <table className="w-full text-left text-sm">
-                                            <thead>
-                                                <tr className="border-b bg-muted/50">
-                                                    <th className="px-3 py-2 font-medium text-muted-foreground">File</th>
-                                                    <th className="px-3 py-2 font-medium text-muted-foreground">Status</th>
-                                                    <th className="px-3 py-2 font-medium text-muted-foreground">Comment</th>
-                                                    <th className="px-3 py-2 font-medium text-muted-foreground">Date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {submission.histories.map((entry) => (
-                                                    <tr key={entry.id} className="border-b last:border-0">
-                                                        <td className="max-w-[140px] truncate px-3 py-2">
-                                                            {entry.file_name}
-                                                        </td>
-                                                        <td className="px-3 py-2">
-                                                            <span
-                                                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusVariant(
-                                                                    entry.status,
-                                                                )}`}
-                                                            >
-                                                                {entry.status}
-                                                            </span>
-                                                        </td>
-                                                        <td className="max-w-[120px] truncate px-3 py-2 text-muted-foreground">
-                                                            {entry.comment ?? '—'}
-                                                        </td>
-                                                        <td className="px-3 py-2 text-muted-foreground">
-                                                            {entry.submitted_at ?? '—'}
-                                                        </td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                    {/* Files table */}
+                                    <div>
+                                        <h4 className="mb-2 text-sm font-medium">Files</h4>
+                                        {visibleFiles.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground">No files.</p>
+                                        ) : (
+                                            <div className="overflow-x-auto rounded-md border">
+                                                <table className="w-full text-left text-sm">
+                                                    <thead>
+                                                        <tr className="border-b bg-muted/50">
+                                                            <th className="px-3 py-2 font-medium text-muted-foreground">File Name</th>
+                                                            <th className="px-3 py-2 font-medium text-muted-foreground">Extension</th>
+                                                            <th className="px-3 py-2 font-medium text-muted-foreground">Size</th>
+                                                            <th className="px-3 py-2 font-medium text-muted-foreground"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {visibleFiles.map((file) => (
+                                                            <tr key={file.id} className="border-b last:border-0">
+                                                                <td className="px-3 py-2">{file.file_name}</td>
+                                                                <td className="px-3 py-2">
+                                                                    <span className="rounded bg-muted px-1 py-0.5 text-xs font-medium uppercase text-muted-foreground">
+                                                                        {file.file_extension}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-3 py-2 text-muted-foreground">
+                                                                    {formatSize(file.file_size)}
+                                                                </td>
+                                                                <td className="px-3 py-2 text-right">
+                                                                    <a href={file.download_url}>
+                                                                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
+                                                                            <Download className="h-3.5 w-3.5" />
+                                                                        </Button>
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                            </div>
+                                </>
+                            ) : (
+                                /* ---------- Non-admin view ---------- */
+                                <>
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">Status</span>
+                                            <span
+                                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${statusVariant(
+                                                    submission.status,
+                                                )}`}
+                                            >
+                                                {submission.status}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Comments / Recommendations */}
+                                    <div>
+                                        <h4 className="mb-2 text-sm font-bold">Comments</h4>
+                                        <p className="mb-1 text-sm text-muted-foreground">Recommendations</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {submission.recommendations ?? '—'}
+                                        </p>
+                                    </div>
+
+                                    {/* Files table — only files NOT uploaded by the current user */}
+                                    <div>
+                                        <h4 className="mb-2 text-sm text-muted-foreground">Files</h4>
+                                        {visibleFiles.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground">No files.</p>
+                                        ) : (
+                                            <div className="overflow-x-auto rounded-md border">
+                                                <table className="w-full text-left text-sm">
+                                                    <thead>
+                                                        <tr className="border-b bg-muted/50">
+                                                            <th className="px-3 py-2 font-normal text-muted-foreground">File Name</th>
+                                                            <th className="px-3 py-2 font-normal text-muted-foreground">Extension</th>
+                                                            <th className="px-3 py-2 font-normal text-muted-foreground">Size</th>
+                                                            <th className="px-3 py-2 font-normal text-muted-foreground"></th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {visibleFiles.map((file) => (
+                                                            <tr key={file.id} className="border-b last:border-0">
+                                                                <td className="px-3 py-2">{file.file_name}</td>
+                                                                <td className="px-3 py-2">
+                                                                    <span className="rounded bg-muted px-1 py-0.5 text-xs font-medium uppercase text-muted-foreground">
+                                                                        {file.file_extension}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-3 py-2 text-muted-foreground">
+                                                                    {formatSize(file.file_size)}
+                                                                </td>
+                                                                <td className="px-3 py-2 text-right">
+                                                                    <a href={file.download_url}>
+                                                                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7">
+                                                                            <Download className="h-3.5 w-3.5" />
+                                                                        </Button>
+                                                                    </a>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        )}
+                                    </div>
+                                </>
+                            )}
                         </div>
 
                         <div className="flex justify-end gap-2">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="text-sm"
-                                onClick={handleClose}
-                            >
-                                Close
-                            </Button>
-                            <a href={submission.download_url}>
-                                <Button type="button" variant="outline" size="sm" className="text-sm">
-                                    <Download className="mr-1 h-3.5 w-3.5" />
-                                    Download
-                                </Button>
-                            </a>
                             <Button
                                 type="button"
                                 size="sm"
@@ -415,7 +420,7 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
                                 onClick={() => setShowUpload(true)}
                             >
                                 <Upload className="mr-1 h-3.5 w-3.5" />
-                                Upload
+                                {uploadButtonLabel}
                             </Button>
                         </div>
                     </>

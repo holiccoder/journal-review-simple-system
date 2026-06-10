@@ -45,7 +45,7 @@ class SubmissionPolicy
      */
     public function delete(User $user, Submission $submission): bool
     {
-        return false;
+        return $user->is_admin || $user->id === $submission->user_id;
     }
 
     /**

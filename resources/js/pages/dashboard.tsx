@@ -20,11 +20,16 @@ type Submission = {
     email: string;
     version: string;
     status: string;
-    comment: string | null;
+    recommendations: string | null;
+    user_id: number;
+    user_name: string | null;
     submitted_at: string | null;
     download_url: string;
-    files: { id: number; file_name: string; file_size: number; file_extension: string }[];
+    replace_url: string;
+    delete_url: string;
+    files: { id: number; file_name: string; file_size: number; file_extension: string; download_url: string }[];
     histories: { id: number; file_name: string; status: string; comment: string | null; submitted_at: string | null; download_url: string }[];
+    history_count: number;
 };
 
 type Props = {
@@ -54,7 +59,7 @@ export default function Dashboard({ submissions, user }: Props) {
                 {!user.is_admin && (
                     <div className="grid auto-rows-min gap-4 md:grid-cols-3">
                         <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 md:col-span-2 dark:border-sidebar-border">
-                            <FileUpload title="Create a Submission" />
+                            <FileUpload title="Create a Submission" hasSubmissions={submissions.length > 0} />
                         </div>
                         <div className="relative overflow-hidden rounded-xl border border-sidebar-border/70 dark:border-sidebar-border">
                             <LatestSubmissionCard submission={submissions[0] ?? null} />
@@ -70,11 +75,9 @@ export default function Dashboard({ submissions, user }: Props) {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="under review">Under Review</SelectItem>
-                                <SelectItem value="needs revision">Needs Revision</SelectItem>
-                                <SelectItem value="accepted">Accepted</SelectItem>
-                                <SelectItem value="rejected">Rejected</SelectItem>
-                                <SelectItem value="recommend submission">Recommend Submission</SelectItem>
+                                <SelectItem value="under review" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Under Review</SelectItem>
+                                <SelectItem value="needs revision" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Needs Revision</SelectItem>
+                                <SelectItem value="recommended for journal submission" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Recommended for Journal Submission</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

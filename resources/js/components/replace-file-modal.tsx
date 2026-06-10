@@ -34,7 +34,7 @@ export default function ReplaceFileModal({ open, onClose, submission }: Props) {
         file: null as File | null,
         version: submission.version,
         status: 'under review',
-        comment: '',
+        recommendations: '',
     });
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -156,43 +156,32 @@ export default function ReplaceFileModal({ open, onClose, submission }: Props) {
                                     }
                                     className="flex h-8 w-full rounded-md border border-input bg-transparent px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                                 >
-                                    <option value="under review">Under Review</option>
-                                    <option value="needs revision">Needs Revision</option>
-                                    <option value="accepted">Accepted</option>
-                                    <option value="rejected">Rejected</option>
-                                    <option value="recommend submission">Recommend Submission</option>
+                                    <option value="under review" className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Under Review</option>
+                                    <option value="needs revision" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Needs Revision</option>
+                                    <option value="recommended for journal submission" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">Recommended for Journal Submission</option>
                                 </select>
                                 <InputError message={form.errors.status} />
                             </div>
 
                             <div className="grid gap-1.5">
-                                <Label htmlFor="replace-comment" className="text-sm">
-                                    Comment
+                                <Label htmlFor="replace-recommendations" className="text-sm">
+                                    Recommendations
                                 </Label>
                                 <textarea
-                                id="replace-comment"
-                                value={form.data.comment}
+                                id="replace-recommendations"
+                                value={form.data.recommendations}
                                 onChange={(e) =>
-                                    form.setData('comment', e.target.value)
+                                    form.setData('recommendations', e.target.value)
                                 }
                                 className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                                placeholder="Add a comment..."
+                                placeholder="Add recommendations..."
                             />
-                            <InputError message={form.errors.comment} />
+                            <InputError message={form.errors.recommendations} />
                         </div>
                         </>
                     )}
 
                     <div className="flex justify-end gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="text-sm"
-                            onClick={handleClose}
-                        >
-                            Cancel
-                        </Button>
                         <Button
                             type="submit"
                             size="sm"
