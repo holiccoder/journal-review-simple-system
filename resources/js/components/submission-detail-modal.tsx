@@ -274,7 +274,7 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
 
                                     {/* Files table */}
                                     <div>
-                                        <h4 className="mb-2 text-sm font-medium">Reviewed Files</h4>
+                                        <h4 className="mb-2 text-sm font-medium">Files</h4>
                                         {visibleFiles.length === 0 ? (
                                             <p className="text-sm text-muted-foreground">No files.</p>
                                         ) : (
@@ -346,7 +346,7 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
 
                                     {/* Files table — only files uploaded by admin */}
                                     <div>
-                                        <h4 className="mb-2 text-sm font-medium">Reviewed Files</h4>
+                                        <h4 className="mb-2 text-sm font-medium">Files</h4>
                                         {visibleFiles.length === 0 ? (
                                             <p className="text-sm text-muted-foreground">No files.</p>
                                         ) : (
