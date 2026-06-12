@@ -21,10 +21,4 @@ return [
 
     'two_factor_otp_package' => 'input-otp',
 
-    'passkey_files' => [
-        'resources/js/components/passkey-item.tsx',
-        'resources/js/components/passkey-register.tsx',
-        'resources/js/components/passkey-verify.tsx',
-        'resources/js/components/manage-passkeys.tsx',
-    ],
 ];

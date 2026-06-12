@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Settings\ProfileController;
 use App\Http\Controllers\Settings\SecurityController;
+use App\Http\Controllers\Settings\StudentController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
@@ -24,4 +25,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('user-password.update');
 
     Route::inertia('settings/appearance', 'settings/appearance')->name('appearance.edit');
+
+    Route::middleware('admin')->group(function () {
+        Route::get('settings/students', [StudentController::class, 'index'])->name('students.edit');
+        Route::post('settings/students', [StudentController::class, 'store'])->name('students.store');
+        Route::patch('settings/students/{user}', [StudentController::class, 'update'])->name('students.update');
+        Route::delete('settings/students/{user}', [StudentController::class, 'destroy'])->name('students.destroy');
+    });
 });

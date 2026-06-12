@@ -117,15 +117,13 @@ export default function Welcome() {
                                 ) : (
                                     /* Register Form */
                                     <div className="rounded-lg bg-white p-6 shadow-[inset_0px_0px_0px_1px_rgba(26,26,0,0.16)] lg:p-8 dark:bg-[#161615] dark:shadow-[inset_0px_0px_0px_1px_#fffaed2d]">
-                                        <div className="mb-6 flex items-center gap-3">
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowRegister(false)}
-                                                className="flex items-center gap-1 text-sm text-muted-foreground hover:text-[#1b1b18] dark:hover:text-[#EDEDEC]"
-                                            >
-                                                ← Back
-                                            </button>
-                                        </div>
+                                        <Button
+                                            type="button"
+                                            className="mb-6"
+                                            onClick={() => setShowRegister(false)}
+                                        >
+                                            ← Back
+                                        </Button>
                                         <h2 className="mb-6 text-lg font-medium text-[#1b1b18] dark:text-[#EDEDEC]">
                                             Create an account
                                         </h2>

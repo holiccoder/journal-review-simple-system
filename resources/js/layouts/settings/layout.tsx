@@ -1,6 +1,5 @@
-import { Link } from '@inertiajs/react';
+import { Link, usePage } from '@inertiajs/react';
 import type { PropsWithChildren } from 'react';
-import Heading from '@/components/heading';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useCurrentUrl } from '@/hooks/use-current-url';
@@ -8,35 +7,56 @@ import { cn, toUrl } from '@/lib/utils';
 import { edit as editAppearance } from '@/routes/appearance';
 import { edit } from '@/routes/profile';
 import { edit as editSecurity } from '@/routes/security';
+import { edit as editStudents } from '@/routes/students';
 import type { NavItem } from '@/types';
-
-const sidebarNavItems: NavItem[] = [
-    {
-        title: 'Profile',
-        href: edit(),
-        icon: null,
-    },
-    {
-        title: 'Security',
-        href: editSecurity(),
-        icon: null,
-    },
-    {
-        title: 'Appearance',
-        href: editAppearance(),
-        icon: null,
-    },
-];
 
 export default function SettingsLayout({ children }: PropsWithChildren) {
     const { isCurrentOrParentUrl } = useCurrentUrl();
+    const { auth } = usePage().props;
+    const isAdmin = auth?.user?.is_admin ?? false;
+
+    const sidebarNavItems: NavItem[] = [
+        {
+            title: 'Profile',
+            href: edit(),
+            icon: null,
+        },
+        {
+            title: 'Security',
+            href: editSecurity(),
+            icon: null,
+        },
+        {
+            title: 'Appearance',
+            href: editAppearance(),
+            icon: null,
+        },
+        ...(isAdmin
+            ? [
+                  {
+                      title: 'Students',
+                      href: editStudents(),
+                      icon: null,
+                  } as NavItem,
+              ]
+            : []),
+    ];
 
     return (
         <div className="px-4 py-6">
-            <Heading
-                title="Settings"
-                description="Manage your profile and account settings"
-            />
+            <header className="mb-8 space-y-0.5">
+                <div className="flex items-center gap-0.5">
+                    <h2 className="text-xl font-semibold tracking-tight">
+                        Settings
+                    </h2>
+                    <Button size="default" className="ml-2" asChild>
+                        <Link href="/dashboard">Back</Link>
+                    </Button>
+                </div>
+                <p className="text-sm text-muted-foreground">
+                    Manage your profile and account settings
+                </p>
+            </header>
 
             <div className="flex flex-col lg:flex-row lg:space-x-12">
                 <aside className="w-full max-w-xl lg:w-48">

@@ -56,7 +56,6 @@ function chiselRun(array $command, string $label): void
  *     auth_types: string,
  *     two_factor_files: list<string>,
  *     two_factor_otp_package: ?string,
- *     passkey_files: list<string>,
  *  } $paths
  */
 $paths = require __DIR__.'/chisel-paths.php';
@@ -70,10 +69,9 @@ return Chisel::script(__DIR__)
                 'email-verification' => 'Email verification',
                 'registration' => 'Registration',
                 '2fa' => 'Two-factor authentication',
-                'passkeys' => 'Passkeys',
                 'password-confirmation' => 'Password confirmation',
             ],
-            default: ['email-verification', 'registration', '2fa', 'passkeys', 'password-confirmation'],
+            default: ['email-verification', 'registration', '2fa', 'password-confirmation'],
             hint: 'Use space to select, enter to confirm.',
         ),
     ])
@@ -175,51 +173,9 @@ return Chisel::script(__DIR__)
             ])->delete();
         },
     )
-    ->selected(
-        'auth_features',
-        'passkeys',
-        then: function (Chisel $c) use ($paths) {
-            $c->files(
-                'config/fortify.php',
-                'app/Providers/FortifyServiceProvider.php',
-                'app/Http/Controllers/Settings/SecurityController.php',
-                'tests/Feature/Auth/AuthenticationTest.php',
-                'tests/Feature/Settings/SecurityTest.php',
-                $paths['security'],
-                $paths['login'],
-                $paths['confirm_password'],
-            )->removeSectionMarkers('passkeys');
-        },
-        else: function (Chisel $c) use ($paths) {
-            $c->php('app/Models/User.php')
-                ->removeImport('Laravel\Fortify\PasskeyAuthenticatable')
-                ->removeImport('Laravel\Fortify\Contracts\PasskeyUser')
-                ->removeTrait('PasskeyAuthenticatable')
-                ->removeInterface('PasskeyUser');
-
-            $c->files(
-                'config/fortify.php',
-                'app/Providers/FortifyServiceProvider.php',
-                'app/Http/Controllers/Settings/SecurityController.php',
-                'tests/Feature/Auth/AuthenticationTest.php',
-                'tests/Feature/Settings/SecurityTest.php',
-                $paths['security'],
-                $paths['login'],
-                $paths['confirm_password'],
-            )->removeSection('passkeys');
-
-            $c->npm()->remove('@laravel/passkeys');
-
-            $c->files(...[
-                ...$paths['passkey_files'],
-                'app/Http/Responses/PasskeyLoginResponse.php',
-                'database/migrations/2024_01_01_000000_create_passkeys_table.php',
-            ])->delete();
-        },
-    )
     ->selectedAny(
         'auth_features',
-        ['2fa', 'passkeys'],
+        ['2fa'],
         then: function (Chisel $c) use ($paths) {
             $c->file($paths['security'])
                 ->removeSectionMarkers('2fa-or-passkeys');
