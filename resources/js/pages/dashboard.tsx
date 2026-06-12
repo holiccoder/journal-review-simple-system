@@ -54,7 +54,7 @@ export default function Dashboard({ submissions, user }: Props) {
 
     return (
         <>
-            <Head title="Dashboard" />
+            <Head />
             <div className="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
                 {!user.is_admin && (
                     <div className="grid auto-rows-min gap-4 md:grid-cols-3">
@@ -93,7 +93,7 @@ export default function Dashboard({ submissions, user }: Props) {
 Dashboard.layout = {
     breadcrumbs: [
         {
-            title: 'Dashboard',
+            title: '水老师审稿',
             href: dashboard(),
         },
     ],

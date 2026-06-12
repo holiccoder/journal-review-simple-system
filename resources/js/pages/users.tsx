@@ -84,7 +84,7 @@ export default function UsersPage({ users }: Props) {
 UsersPage.layout = {
     breadcrumbs: [
         {
-            title: 'Dashboard',
+            title: '水老师审稿',
             href: '/dashboard',
         },
         {

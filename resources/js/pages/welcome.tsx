@@ -20,7 +20,7 @@ export default function Welcome() {
             <div className="flex min-h-screen flex-col bg-[#FDFDFC] text-[#1b1b18] dark:bg-[#0a0a0a]">
                 <header className="w-full border-b border-gray-200 px-6 py-4 dark:border-gray-800 lg:px-8">
                     <div className="mx-auto flex w-full max-w-4xl items-center justify-end relative">
-                        <h1 className="absolute left-1/2 -translate-x-1/2 text-base font-semibold tracking-tight whitespace-nowrap">
+                        <h1 className="absolute left-[42%] -translate-x-1/2 text-base font-semibold tracking-tight whitespace-nowrap">
                             Manuscript and Project Review System
                         </h1>
                         <div className="flex items-center gap-2">
