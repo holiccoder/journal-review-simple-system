@@ -1,6 +1,7 @@
 import { AppContent } from '@/components/app-content';
 import { AppShell } from '@/components/app-shell';
 import { AppSidebarHeader } from '@/components/app-sidebar-header';
+import SiteFooter from '@/components/site-footer';
 import type { ReactNode } from 'react';
 
 interface AppLayoutProps {
@@ -18,6 +19,7 @@ export default function AppSidebarLayout({
                 <AppSidebarHeader breadcrumbs={breadcrumbs} />
                 {children}
             </AppContent>
+            <SiteFooter />
         </AppShell>
     );
 }

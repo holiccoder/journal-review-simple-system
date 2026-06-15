@@ -2,6 +2,7 @@ import { Form, Head, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
+import SiteFooter from '@/components/site-footer';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -217,11 +218,7 @@ export default function Welcome() {
                         )}
                     </main>
                 </div>
-                <footer className="w-full border-t border-gray-200 px-6 py-4 dark:border-gray-800 lg:px-8">
-                    <p className="text-center text-sm text-muted-foreground">
-                        Shui Teacher Research Training
-                    </p>
-                </footer>
+                <SiteFooter />
             </div>
         </>
     );
