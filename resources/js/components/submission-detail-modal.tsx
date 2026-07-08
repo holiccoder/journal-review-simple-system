@@ -134,7 +134,7 @@ export default function SubmissionDetailModal({ open, onClose, onUploaded, submi
 
     return (
         <Dialog open={open} onOpenChange={(open) => !open && handleClose()}>
-            <DialogContent className="sm:max-w-2xl">
+            <DialogContent className="sm:max-w-[66.6667vw]">
                 {showUpload ? (
                     <>
                         <DialogHeader>
