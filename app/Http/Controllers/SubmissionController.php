@@ -20,7 +20,7 @@ class SubmissionController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255'],
             'files' => ['required', 'array'],
-            'files.*' => ['file', 'max:10240'],
+            'files.*' => ['file', 'max:204800'],
             'version' => ['required', 'string', 'max:50'],
         ]);
 
@@ -54,7 +54,7 @@ class SubmissionController extends Controller
         $this->authorize('update', $submission);
 
         $validated = $request->validate([
-            'file' => ['nullable', 'file', 'max:10240'],
+            'file' => ['nullable', 'file', 'max:204800'],
             'status' => ['required', 'string', 'in:under review,needs revision,accepted,rejected,recommended for journal submission'],
             'recommendations' => ['nullable', 'string', 'max:500'],
         ]);
